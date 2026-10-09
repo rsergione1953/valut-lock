@@ -1,0 +1,25 @@
+dependencies:
+  cupertino_icons: ^1.0.8
+  flet: 1.0.4
+  flutter:
+    sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
+  msgpack_dart: ^1.0.1
+  package_info_plus: ^9.0.0
+  path: ^1.9.0
+  path_provider: ^2.1.4
+  serious_python: 5.0.0
+  window_manager: ^0.5.1
+dependency_overrides:
+  flet: 1.0.4
+description: ''
+dev_dependencies:
+  flutter_lints: ^2.0.0
+environment:
+  sdk: '>=3.1.5 <4.0.0'
+flutter:
+  uses-material-design: true
+name: unapassword
+publish_to: none
+version: 1.0.0+1
