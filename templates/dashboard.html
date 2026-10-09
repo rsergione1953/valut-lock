@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPsoft VaultLock - Dashboard</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #1A1614;
+            color: #F3F4F6;
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+
+        header {
+            background: #2D2420;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #3D312A;
+        }
+
+        header h2 {
+            color: #D97706;
+            font-size: 20px;
+        }
+
+        .btn-logout {
+            background: #374151;
+            color: #FFF;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 25px auto;
+            padding: 0 15px;
+        }
+
+        .top-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .top-bar input {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 1px solid #443730;
+            background: #2D2420;
+            color: #FFF;
+            font-size: 14px;
+        }
+
+        .btn-add {
+            background: #D97706;
+            color: #FFF;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .card {
+            background: #2D2420;
+            border: 1px solid #3D312A;
+            border-radius: 14px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-info h3 {
+            color: #D97706;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .card-info p {
+            color: #9CA3AF;
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn-act {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .btn-copy {
+            background: #374151;
+            color: #FFF;
+        }
+
+        .btn-edit {
+            background: #D97706;
+            color: #FFF;
+        }
+
+        .btn-del {
+            background: #EF4444;
+            color: #FFF;
+        }
+
+        /* Modal Form */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #1A1614;
+            border: 1px solid #D97706;
+            border-radius: 16px;
+            padding: 25px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .modal-content h3 {
+            color: #D97706;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border: 1px solid #443730;
+            background: #2D2420;
+            color: #FFF;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h2>🗄️ SPsoft VaultLock Web</h2>
+        <button class="btn-logout" onclick="logout()">Blocca 🔒</button>
+    </header>
+
+    <div class="container">
+        <div class="top-bar">
+            <input type="text" id="search" placeholder="🔍 Cerca servizio..." oninput="filterCards()">
+            <button class="btn-add" onclick="openModal()">+ Nuova Credenziale</button>
+        </div>
+        <div id="cardsList"></div>
+    </div>
+
+    <!-- Modal Aggiungi/Modifica -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">Nuova Credenziale</h3>
+            <input type="hidden" id="editId">
+            <input type="text" id="formServizio" placeholder="Servizio (es. Amazon)">
+            <input type="text" id="formUsername" placeholder="Username / Email">
+            <input type="text" id="formPassword" placeholder="Password">
+            <input type="text" id="formNote" placeholder="Note (opzionale)">
+            <div class="modal-buttons">
+                <button style="background:#374151; color:#FFF" onclick="closeModal()">Annulla</button>
+                <button style="background:#D97706; color:#FFF" onclick="saveCredential()">Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let credentials = [];
+
+        async function loadCredentials() {
+            const res = await fetch('/api/credentials');
+            if (res.status === 401) { window.location.reload(); return; }
+            credentials = await res.json();
+            renderCards(credentials);
+        }
+
+        function renderCards(list) {
+            const container = document.getElementById('cardsList');
+            if (list.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#9CA3AF; margin-top:40px;">Nessuna credenziale trovata.</p>';
+                return;
+            }
+            container.innerHTML = list.map(c => `
+                <div class="card">
+                    <div class="card-info">
+                        <h3>${escapeHtml(c.servizio)}</h3>
+                        <p>Utente: ${escapeHtml(c.username)}</p>
+                        <p id="pwd-${c.id}">Password: ••••••••••••</p>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn-act btn-copy" onclick="toggleShow(${c.id}, '${escapeJs(c.password)}')">👁️</button>
+                        <button class="btn-act btn-copy" onclick="copyText('${escapeJs(c.password)}')">📋</button>
+                        <button class="btn-act btn-edit" onclick="openModalEdit(${c.id})">✏️</button>
+                        <button class="btn-act btn-del" onclick="deleteCred(${c.id}, '${escapeJs(c.servizio)}')">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterCards() {
+            const q = document.getElementById('search').value.toLowerCase();
+            const filtered = credentials.filter(c => c.servizio.toLowerCase().includes(q) || c.username.toLowerCase().includes(q));
+            renderCards(filtered);
+        }
+
+        function toggleShow(id, pwd) {
+            const el = document.getElementById(`pwd-${id}`);
+            if (el.innerText.includes('••••')) {
+                el.innerText = `Password: ${pwd}`;
+            } else {
+                el.innerText = 'Password: ••••••••••••';
+            }
+        }
+
+        function copyText(txt) {
+            navigator.clipboard.writeText(txt);
+            alert('Password copiata negli appunti!');
+        }
+
+        function openModal() {
+            document.getElementById('modalTitle').innerText = 'Nuova Credenziale';
+            document.getElementById('editId').value = '';
+            document.getElementById('formServizio').value = '';
+            document.getElementById('formUsername').value = '';
+            document.getElementById('formPassword').value = '';
+            document.getElementById('formNote').value = '';
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function openModalEdit(id) {
+            const c = credentials.find(item => item.id === id);
+            if (!c) return;
+            document.getElementById('modalTitle').innerText = 'Modifica Credenziale';
+            document.getElementById('editId').value = c.id;
+            document.getElementById('formServizio').value = c.servizio;
+            document.getElementById('formUsername').value = c.username;
+            document.getElementById('formPassword').value = c.password;
+            document.getElementById('formNote').value = c.note;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        async function saveCredential() {
+            const id = document.getElementById('editId').value;
+            const payload = {
+                servizio: document.getElementById('formServizio').value,
+                username: document.getElementById('formUsername').value,
+                password: document.getElementById('formPassword').value,
+                note: document.getElementById('formNote').value
+            };
+
+            const url = id ? `/api/credentials/${id}` : '/api/credentials';
+            const method = id ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                closeModal();
+                loadCredentials();
+            } else {
+                alert('Compila tutti i campi obbligatori!');
+            }
+        }
+
+        async function deleteCred(id, servizio) {
+            if (confirm(`Eliminare la credenziale per ${servizio}?`)) {
+                await fetch(`/api/credentials/${id}`, { method: 'DELETE' });
+                loadCredentials();
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.reload();
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+        }
+
+        function escapeJs(str) {
+            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
+
+        loadCredentials();
+    </script>
+</body>
+
+</html>
