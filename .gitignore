@@ -1,0 +1,14 @@
+# Database locale e file sensibili (MAI caricare su GitHub)
+*.db
+passwords_vault.db
+
+# Ambiente virtuale Python e cache
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# File di sistema / IDE
+.vscode/
+.idea/
+.DS_Store
